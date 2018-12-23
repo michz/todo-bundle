@@ -1,0 +1,14 @@
+{
+  "name": "mztx/todo-bundle",
+  "license": "MIT",
+  "type": "library",
+  "description": "Very simple Symfony bundle that helps tracking TODO markers in code.",
+  "autoload": {
+    "psr-4": {
+      "mztx\\TodoBundle\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">=7.1.0"
+  }
+}
