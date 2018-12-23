@@ -14,18 +14,25 @@ use Symfony\Component\Cache\Adapter\AdapterInterface;
 class TodoList
 {
     /** @var string[]|array */
-    protected $extensions = ['php', 'md', 'txt', 'htm', 'html', 'twig'];
-
-    /** @var string */
-    protected $basepath = '';
+    protected $extensions;
 
     /** @var AdapterInterface */
     protected $cache;
 
-    public function __construct(string $basepath, AdapterInterface $cache)
-    {
-        $this->basepath = $basepath;
+    /** @var string[] */
+    private $pathsToCrawl;
+
+    /**
+     * @param string[] $pathsToCrawl
+     */
+    public function __construct(
+        AdapterInterface $cache,
+        array $pathsToCrawl,
+        array $extensions
+    ) {
         $this->cache = $cache;
+        $this->pathsToCrawl = $pathsToCrawl;
+        $this->extensions = $extensions;
     }
 
     /**
@@ -34,13 +41,12 @@ class TodoList
     public function getTodoList(): array
     {
         $cache = $this->cache;
-        $dirs = ['../src', '../app/Resources'];
 
         $cached = $cache->getItem('app.todo.list');
         if (!$cached->isHit()) {
             $r = [];
 
-            foreach ($dirs as $dir) {
+            foreach ($this->pathsToCrawl as $dir) {
                 $this->traverseTodoList($dir, $r);
             }
 
@@ -72,7 +78,7 @@ class TodoList
      */
     protected function traverseTodoList(string $dir, array &$todos): void
     {
-        if ($handle = \opendir($this->basepath . '/' . $dir)) {
+        if ($handle = \opendir($dir)) {
             while (false !== ($entry = \readdir($handle))) {
                 // ignore . and ..
                 if ('.' == $entry || '..' == $entry) {
@@ -80,9 +86,9 @@ class TodoList
                 }
 
                 // get extension
-                $i = \pathinfo($this->basepath . '/' . $dir . '/' . $entry);
+                $i = \pathinfo($dir . '/' . $entry);
 
-                if (\is_dir($this->basepath . '/' . $dir . '/' . $entry)) {
+                if (\is_dir($dir . '/' . $entry)) {
                     $this->traverseTodoList($dir . '/' . $entry, $todos);
                 } elseif (\is_file($dir . '/' . $entry)) {
                     // ignore all extensions except php, htm, html, twig, ...
@@ -102,7 +108,7 @@ class TodoList
      */
     protected function parseFile(string $path, array &$todos): void
     {
-        $file = \file_get_contents($this->basepath . '/' . $path);
+        $file = \file_get_contents($path);
 
         $matches = [];
         \preg_match_all(
